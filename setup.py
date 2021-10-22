@@ -8,7 +8,7 @@ from torch.utils import cpp_extension
 '''
 
 setup(
-    name='pytorch_loss',
+    name='tkit_pytorch_loss',
     ext_modules=[
         cpp_extension.CUDAExtension(
             'focal_cpp',

@@ -2,11 +2,11 @@
 # -*- encoding: utf-8 -*-
 
 
+import soft_dice_cpp  # should import torch before import this
 import torch
+import torch.cuda.amp as amp
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.cuda.amp as amp
-import soft_dice_cpp # should import torch before import this
 
 
 ## Soft Dice Loss for binary segmentation
@@ -169,8 +169,8 @@ class SoftDiceLossV3Func(torch.autograd.Function):
 if __name__ == '__main__':
     import torchvision
     import torch
-    import numpy as np
-    import random
+
+
     #  torch.manual_seed(15)
     #  random.seed(15)
     #  np.random.seed(15)

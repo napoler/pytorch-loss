@@ -37,11 +37,10 @@
 '''
 
 import torch
+import torch.cuda.amp as amp
+import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.distributed as dist
-import torch.cuda.amp as amp
-
 
 
 class InfoNceDist(nn.Module):

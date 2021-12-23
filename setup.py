@@ -1,5 +1,5 @@
 
-from setuptools import setup, Extension, find_packages
+from setuptools import find_packages, setup
 from torch.utils import cpp_extension
 
 '''
@@ -9,6 +9,7 @@ from torch.utils import cpp_extension
 
 setup(
     name='tkit_pytorch_loss',
+
     ext_modules=[
         cpp_extension.CUDAExtension(
             'focal_cpp',

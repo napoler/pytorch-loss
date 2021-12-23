@@ -1,14 +1,14 @@
-
 ## TODO: test case should cover, n_class from 3 to 256, test ignore index, test speed and memory usage
 
-from lovasz_softmax import LovaszSoftmaxV1, LovaszSoftmaxV3
-from label_smooth import LabelSmoothSoftmaxCEV3
-import torchvision
+import random
+
+import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
-import random
+import torchvision
+
+from label_smooth import LabelSmoothSoftmaxCEV3
+
 torch.manual_seed(15)
 random.seed(15)
 np.random.seed(15)

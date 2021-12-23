@@ -3,76 +3,81 @@
 
 
 import torch
-import torch.nn as nn
 import torch.cuda.amp as amp
+import torch.nn as nn
+import torch.nn.functional as F
 
 
 ##
 # version 1: use pytorch autograd
-class SwishV1(nn.Module):
+class HSwishV1(nn.Module):
 
     def __init__(self):
-        super(SwishV1, self).__init__()
+        super(HSwishV1, self).__init__()
 
     def forward(self, feat):
-        return feat * torch.sigmoid(feat)
+        return feat * F.relu6(feat + 3) / 6
 
 
 ##
 # version 2: use derived formula to compute grad
-class SwishFunction(torch.autograd.Function):
+class HSwishFunctionV2(torch.autograd.Function):
 
     @staticmethod
-    @amp.custom_fwd
+    @amp.custom_fwd(cast_inputs=torch.float32)
     def forward(ctx, feat):
-        sig = torch.sigmoid(feat)
-        out = feat * torch.sigmoid(feat)
-        grad = sig * (1 + feat * (1 - sig))
-        ctx.grad = grad
-        return out
+        #  act = (feat + 3).mul_(feat).div_(6).clip_(0)
+        act = F.relu6(feat + 3).mul_(feat).div_(6)
+        ctx.variables = feat
+        return act
 
     @staticmethod
     @amp.custom_bwd
     def backward(ctx, grad_output):
-        grad = ctx.grad
+        feat = ctx.variables
+        grad = F.relu6(feat + 3).div_(6)
+        grad.add_(torch.where(
+            torch.eq(-3 < feat, feat < 3),
+            torch.ones_like(feat).div_(6),
+            torch.zeros_like(feat)).mul_(feat))
         grad *= grad_output
         return grad
 
 
-class SwishV2(nn.Module):
+class HSwishV2(nn.Module):
 
     def __init__(self):
-        super(SwishV2, self).__init__()
+        super(HSwishV2, self).__init__()
 
     def forward(self, feat):
-        return SwishFunction.apply(feat)
+        return HSwishFunctionV2.apply(feat)
 
 
 ##
 # version 3: write with cuda which requires less memory and can be faster
 import swish_cpp
-class SwishFunctionV3(torch.autograd.Function):
+class HSwishFunctionV3(torch.autograd.Function):
 
     @staticmethod
-    @amp.custom_fwd
+    @amp.custom_fwd(cast_inputs=torch.float32)
     def forward(ctx, feat):
         ctx.feat = feat
-        return swish_cpp.swish_forward(feat)
+        return swish_cpp.hswish_forward(feat)
 
     @staticmethod
     @amp.custom_bwd
     def backward(ctx, grad_output):
         feat = ctx.feat
-        return swish_cpp.swish_backward(grad_output, feat)
+        return swish_cpp.hswish_backward(grad_output, feat)
 
 
-class SwishV3(nn.Module):
+class HSwishV3(nn.Module):
 
     def __init__(self):
-        super(SwishV3, self).__init__()
+        super(HSwishV3, self).__init__()
 
     def forward(self, feat):
-        return SwishFunctionV3.apply(feat)
+        return HSwishFunctionV3.apply(feat)
 
 
 if __name__ == "__main__":
@@ -81,22 +86,22 @@ if __name__ == "__main__":
     sd = {k: v for k, v in net.state_dict().items() if k.startswith('conv1.') or k.startswith('bn1.')}
 
     class Net(nn.Module):
-        def __init__(self, act='swishv1'):
+        def __init__(self, act='hswishv1'):
             super(Net, self).__init__()
             self.conv1 = nn.Conv2d(3, 64, 7, 2, 3)
             self.bn1 = nn.BatchNorm2d(64)
-            if act == 'swishv1':
-                self.act1 = SwishV1()
-            elif act == 'swishv2':
-                self.act1 = SwishV2()
-            elif act == 'swishv3':
-                self.act1 = SwishV3()
+            if act == 'hswishv1':
+                self.act1 = HSwishV1()
+            elif act == 'hswishv2':
+                self.act1 = HSwishV2()
+            elif act == 'hswishv3':
+                self.act1 = HSwishV3()
             self.dense = nn.Linear(64, 10, bias=False)
             self.crit = nn.CrossEntropyLoss()
             state = self.state_dict()
             state.update(sd)
             self.load_state_dict(state)
-            torch.nn.init.constant_(self.dense.weight, 1)
+            #  torch.nn.init.constant_(self.dense.weight, 1)
         def forward(self, feat, label):
             feat = self.conv1(feat)
             feat = self.bn1(feat)
@@ -106,8 +111,8 @@ if __name__ == "__main__":
             loss = self.crit(logits, label)
             return loss
 
-    net1 = Net(act='swishv1')
-    net2 = Net(act='swishv3')
+    net1 = Net(act='hswishv1')
+    net2 = Net(act='hswishv3')
     net2.load_state_dict(net1.state_dict())
     net1.cuda()
     net2.cuda()
@@ -136,7 +141,7 @@ if __name__ == "__main__":
     from torch.autograd import gradcheck
     inten = torch.randn(3, 4, 6, 6).cuda()
     inten.requires_grad_(True)
-    gradcheck(SwishFunctionV3.apply, [inten, ])
+    gradcheck(HSwishFunctionV3.apply, [inten, ])
 
 
 

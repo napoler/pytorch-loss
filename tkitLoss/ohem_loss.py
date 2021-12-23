@@ -2,11 +2,11 @@
 # -*- encoding: utf-8 -*-
 
 
+import ohem_cpp
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import ohem_cpp
 from .large_margin_softmax import LargeMarginSoftmaxV3
 
 

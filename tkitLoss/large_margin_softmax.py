@@ -1,8 +1,8 @@
 
 import torch
+import torch.cuda.amp as amp
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.cuda.amp as amp
 
 '''
 proposed in the BMVC2019 paper: [Large Margin in Softmax Cross-Entropy Loss

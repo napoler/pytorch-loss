@@ -1,10 +1,9 @@
 
 
 import torch
+import torch.cuda.amp as amp
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.cuda.amp as amp
-
 
 '''
 proposed in this paper: [Exploring Alternatives to Softmax Function](https://arxiv.org/pdf/2011.11538.pdf)
@@ -198,7 +197,6 @@ class TaylorCrossEntropyLossV3(nn.Module):
 
 
 if __name__ == '__main__':
-    import numpy as np
     import torchvision
     torch.backends.cudnn.deterministic = True
     #  tsoftmax = TaylorSoftmaxV3(dim=0, n=4)

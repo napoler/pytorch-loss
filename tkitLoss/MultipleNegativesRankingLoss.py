@@ -90,10 +90,16 @@ class MultipleNegativesRankingLoss(nn.Module):
 
         embeddings_a = reps[0]
         embeddings_b = torch.cat(reps[1:])
-
+        print("embeddings_a", embeddings_a.size())
+        print("embeddings_b", embeddings_b.size())
+        # cos_sim
         scores = self.similarity_fct(embeddings_a, embeddings_b) * self.scale
+
         labels = torch.tensor(range(len(scores)), dtype=torch.long,
                               device=scores.device)  # Example a[i] should match with b[i]
+
+        print("scores", scores)
+        print("labels", labels)
         return self.cross_entropy_loss(scores, labels)
 
     def get_config_dict(self):

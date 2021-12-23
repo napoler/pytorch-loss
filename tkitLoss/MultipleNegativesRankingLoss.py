@@ -87,7 +87,7 @@ class MultipleNegativesRankingLoss(nn.Module):
         # print("reps", reps)
         # outputs = model(**inputs)
         # print(outputs.pooler_output)
-
+        print(len(reps))
         embeddings_a = reps[0]
         embeddings_b = torch.cat(reps[1:])
         print("embeddings_a", embeddings_a.size())
